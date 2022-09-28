@@ -1,8 +1,8 @@
 package com.vvpanf.todolistbot.model.handler;
 
-import com.vvpanf.todolistbot.entity.Item;
-import com.vvpanf.todolistbot.entity.TodoList;
-import com.vvpanf.todolistbot.entity.User;
+import com.vvpanf.todolistbot.dto.ItemDto;
+import com.vvpanf.todolistbot.dto.TodoListDto;
+import com.vvpanf.todolistbot.dto.UserDto;
 import com.vvpanf.todolistbot.model.BotStateCash;
 import com.vvpanf.todolistbot.model.constants.BotMenuCommand;
 import com.vvpanf.todolistbot.model.constants.BotState;
@@ -10,6 +10,7 @@ import com.vvpanf.todolistbot.service.TodoListService;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
@@ -22,7 +23,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -90,15 +90,17 @@ public class EventHandler {
      */
     public List<BotApiMethod<?>> showListsMessage(long chatId, long userId) {
         String text = "Ваши списки:";
-        List<TodoList> todoLists = todoListService.getLists(userId);
+        List<TodoListDto> todoLists = todoListService.getLists(userId);
         if (todoLists.isEmpty()) {
-            text = "У вас нет созданных списков.";
+            text = "У вас нет созданных списков";
             return List.of(new SendMessage(String.valueOf(chatId), text));
         }
         List<List<InlineKeyboardButton>> keyboardButtons = todoLists.stream().map(todoList -> {
             InlineKeyboardButton button = new InlineKeyboardButton();
             button.setText(todoList.getName());
-            button.setCallbackData("list" + todoList.getId().toString());
+            JSONObject json = new JSONObject();
+            json.put("listId", todoList.getId());
+            button.setCallbackData(json.toString());
             return List.of(button);
         }).collect(Collectors.toList());
         addMenuButtons(keyboardButtons, false);
@@ -156,7 +158,7 @@ public class EventHandler {
      */
     public List<BotApiMethod<?>> deleteListMessage(long chatId, long userId) {
         String text = "Выберите список для удаления";
-        List<TodoList> todoLists = todoListService.getLists(userId);
+        List<TodoListDto> todoLists = todoListService.getLists(userId);
         if (todoLists.isEmpty()) {
             text = "У вас нет созданных списков";
             return List.of(new SendMessage(String.valueOf(chatId), text));
@@ -164,7 +166,9 @@ public class EventHandler {
         List<List<InlineKeyboardButton>> keyboardButtons = todoLists.stream().map(todoList -> {
             InlineKeyboardButton button = new InlineKeyboardButton();
             button.setText(todoList.getName());
-            button.setCallbackData("delete" + todoList.getId().toString());
+            JSONObject json = new JSONObject();
+            json.put("deleteId", todoList.getId());
+            button.setCallbackData(json.toString());
             return List.of(button);
         }).collect(Collectors.toList());
         addMenuButtons(keyboardButtons, false);
@@ -231,12 +235,9 @@ public class EventHandler {
      * @param listId
      * @return
      */
-    public List<BotApiMethod<?>> showListItemsCallback(long chatId, long userId, long messageId, long listId) {
+    public List<BotApiMethod<?>> showListItemsCallback(long chatId, long userId, long messageId, String listId, String callbackId) {
         List<BotApiMethod<?>> result = new ArrayList<>();
-        TodoList todoList = todoListService.getList(listId);
-        if (!todoList.getUser().getUserId().equals(userId)) {
-            throw new RuntimeException("Wrong user");
-        }
+        TodoListDto todoList = todoListService.getList(userId, listId);
 
         int listSize = todoList.getItems().size();
         String text = todoList.getName() + "\n" + "1/" + getLastPage(listSize);
@@ -244,6 +245,7 @@ public class EventHandler {
         List<List<InlineKeyboardButton>> keyboardButtons = buttonsFromListItems(todoList, 1);
         addMenuButtons(keyboardButtons, listSize > PAGE_SIZE);
 
+        result.add(new AnswerCallbackQuery(callbackId));
         result.add(DeleteMessage.builder()
                 .chatId(String.valueOf(chatId))
                 .messageId((int) messageId)
@@ -264,17 +266,12 @@ public class EventHandler {
      * @param itemId
      * @return
      */
-    public List<BotApiMethod<?>> toggleItemCallback(long chatId, long userId, long messageId, String messageText, long itemId, String callbackId) {
+    public List<BotApiMethod<?>> toggleItemCallback(long chatId, long userId, long messageId, String messageText, String itemId, String callbackId) {
         List<BotApiMethod<?>> result = new ArrayList<>();
-        Item item = todoListService.getItem(itemId);
-        TodoList todoList = item.getList();
-        if (!todoList.getUser().getUserId().equals(userId)) {
-            throw new RuntimeException("Wrong user");
-        }
+        ItemDto item = todoListService.getItem(userId, itemId);
+        todoListService.saveItem(userId, item.getId(), !item.isChecked());
 
-        item.setChecked(!item.isChecked());
-        todoListService.saveItem(item);
-
+        TodoListDto todoList = todoListService.getListByItemId(userId, itemId);
         int currentPage = Integer.parseInt(messageText.split("\n")[1].split("/")[0]);
         int listSize = todoList.getItems().size();
         List<List<InlineKeyboardButton>> keyboardButtons = buttonsFromListItems(todoList, currentPage);
@@ -296,11 +293,12 @@ public class EventHandler {
      * @param deleteId
      * @return
      */
-    public List<BotApiMethod<?>> deleteListCallback(long chatId, long userId, long messageId, long deleteId) {
+    public List<BotApiMethod<?>> deleteListCallback(long chatId, long userId, long messageId, String deleteId, String callbackId) {
         List<BotApiMethod<?>> result = new ArrayList<>();
         String text = "Список успешно удалён";
         todoListService.removeList(userId, deleteId);
 
+        result.add(new AnswerCallbackQuery(callbackId));
         result.add(DeleteMessage.builder()
                 .chatId(String.valueOf(chatId))
                 .messageId((int) messageId)
@@ -336,9 +334,8 @@ public class EventHandler {
         }
     }
 
-    private List<List<InlineKeyboardButton>> buttonsFromListItems(TodoList todoList, int currentPage) {
+    private List<List<InlineKeyboardButton>> buttonsFromListItems(TodoListDto todoList, int currentPage) {
         return todoList.getItems().stream()
-                .sorted(Comparator.comparingLong(Item::getId))
                 .skip((currentPage-1) * PAGE_SIZE)
                 .limit(PAGE_SIZE)
                 .map(listItem -> {
@@ -347,16 +344,18 @@ public class EventHandler {
                             ? CHECKED_SIGN
                             : UNCHECKED_SIGN;
                     button.setText(checkSign + listItem.getContent());
-                    button.setCallbackData("item" + listItem.getId().toString());
+                    JSONObject json = new JSONObject();
+                    json.put("itemId", listItem.getId());
+                    button.setCallbackData(json.toString());
                     return List.of(button);
                 }).collect(Collectors.toList());
     }
 
     private List<BotApiMethod<?>> pageCallback(long chatId, long userId, long messageId, String messageText, String callbackId, boolean isNext) {
         List<BotApiMethod<?>> result = new ArrayList<>();
-        User user = todoListService.getUser(userId);
+        UserDto user = todoListService.getUser(userId);
         String listName = messageText.split("\n")[0];
-        TodoList todoList = user.getLists().stream().filter(list -> list.getName().equals(listName)).findFirst().orElseThrow();
+        TodoListDto todoList = user.getLists().stream().filter(list -> list.getName().equals(listName)).findFirst().orElseThrow();
 
         int listSize = todoList.getItems().size();
         int currentPage = Integer.parseInt(messageText.split("\n")[1].split("/")[0]);

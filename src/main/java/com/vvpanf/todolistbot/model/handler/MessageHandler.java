@@ -1,10 +1,8 @@
 package com.vvpanf.todolistbot.model.handler;
 
-import com.vvpanf.todolistbot.entity.User;
 import com.vvpanf.todolistbot.model.BotStateCash;
 import com.vvpanf.todolistbot.model.constants.BotCommand;
 import com.vvpanf.todolistbot.model.constants.BotState;
-import com.vvpanf.todolistbot.repo.UserRepo;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -20,7 +18,6 @@ import java.util.List;
 public class MessageHandler {
     final EventHandler eventHandler;
     final BotStateCash botStateCash;
-    final UserRepo userRepo;
 
     public List<BotApiMethod<?>> handle(Message message) {
         BotState botState = botStateCash.getBotState(message.getFrom().getId()) == null
@@ -39,10 +36,6 @@ public class MessageHandler {
 
         if (botCommand == null) {
             return eventHandler.unknownMessage(chatId);
-        }
-
-        if (userRepo.findByUserId(userId) == null) {
-            userRepo.save(new User(userId));
         }
 
         switch (botCommand) {

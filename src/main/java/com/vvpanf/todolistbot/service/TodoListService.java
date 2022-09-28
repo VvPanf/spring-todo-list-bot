@@ -1,67 +1,27 @@
 package com.vvpanf.todolistbot.service;
 
-import com.vvpanf.todolistbot.entity.Item;
-import com.vvpanf.todolistbot.entity.TodoList;
-import com.vvpanf.todolistbot.entity.User;
-import com.vvpanf.todolistbot.repo.ItemRepo;
-import com.vvpanf.todolistbot.repo.TodoListRepo;
-import com.vvpanf.todolistbot.repo.UserRepo;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.vvpanf.todolistbot.dto.ItemDto;
+import com.vvpanf.todolistbot.dto.TodoListDto;
+import com.vvpanf.todolistbot.dto.UserDto;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
-@Service
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class TodoListService {
-    final UserRepo userRepo;
-    final TodoListRepo todoListRepo;
-    final ItemRepo itemRepo;
+public interface TodoListService {
+    UserDto getUser(long userId);
 
-    public User getUser(long userId) {
-        return userRepo.findByUserId(userId);
-    }
+    void addUser(long userId);
 
-    @Transactional
-    public void addUser(long userId) {
-        if (!userRepo.existsByUserId(userId)) {
-            userRepo.save(new User(userId));
-        }
-    }
+    List<TodoListDto> getLists(long userId);
 
-    public List<TodoList> getLists(long userId) {
-        return getUser(userId).getLists();
-    }
+    TodoListDto getList(long userId, String listId);
 
-    public TodoList getList(long listId) { return todoListRepo.getById(listId); }
+    TodoListDto getListByItemId(long userId, String itemId);
 
-    public Item getItem(long itemId) {
-        return itemRepo.getById(itemId);
-    }
+    ItemDto getItem(long userId, String itemId);
 
-    public void saveItem(Item item) {
-        itemRepo.save(item);
-    }
+    void saveItem(long userId, String itemId, boolean checked);
 
-    @Transactional
-    public void addList(long userId, String title, List<String> itemContents) {
-        User user = getUser(userId);
-        TodoList todoList = new TodoList(title, user);
-        List<Item> items = itemContents.stream().map(content -> new Item(content, false, todoList)).collect(Collectors.toList());
-        todoListRepo.save(todoList);
-        itemRepo.saveAll(items);
-    }
+    void addList(long userId, String title, List<String> itemContents);
 
-    @Transactional
-    public void removeList(long userId, long listId) throws NoSuchElementException {
-        User user = getUser(userId);
-        TodoList todoList = user.getLists().stream().filter(item -> item.getId().equals(listId)).findFirst().orElseThrow();
-        todoListRepo.delete(todoList);
-    }
+    void removeList(long userId, String id);
 }
