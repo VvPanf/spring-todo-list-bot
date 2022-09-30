@@ -1,0 +1,26 @@
+version: '3'
+services:
+  bot-server:
+    container_name: bot-server
+    build:
+      context: .
+      dockerfile: DockerFile
+    image: bot-server:latest
+    ports:
+      - 8080:8080
+    networks:
+      - spring-network
+    env_file:
+      - .env
+  mongodb:
+    container_name: mongodb
+    image: mongo:6.0.1
+      ports:
+        - '27017:27017'
+      volumes:
+        - 'mongo:/data/db'
+network:
+  spring-network:
+    driver: brige
+
+
