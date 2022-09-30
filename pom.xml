@@ -9,6 +9,7 @@
     <version>1.1</version>
 
     <properties>
+        <bot.version>1.1</bot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <start-class>com.vvpanf.todolistbot.App</start-class>
         <maven.compiler.source>11</maven.compiler.source>

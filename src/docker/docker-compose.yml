@@ -2,25 +2,25 @@ version: '3'
 services:
   bot-server:
     container_name: bot-server
+    depends_on:
+      - mongo-server
     build:
       context: .
-      dockerfile: DockerFile
+      dockerfile: Dockerfile
     image: bot-server:latest
     ports:
       - 8080:8080
-    networks:
-      - spring-network
-    env_file:
-      - .env
-  mongodb:
-    container_name: mongodb
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_WEBHOOK=${BOT_WEBHOOK}
+      - MONGODB_URI=${MONGODB_URI}
+  mongo-server:
+    container_name: mongo-server
     image: mongo:6.0.1
-      ports:
-        - '27017:27017'
-      volumes:
-        - 'mongo:/data/db'
-network:
-  spring-network:
-    driver: brige
+    volumes:
+      - '/tmp/mongodb:/data/db'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
 
 
