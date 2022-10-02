@@ -14,6 +14,8 @@ services:
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_WEBHOOK=${BOT_WEBHOOK}
       - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_USERNAME=${MONGODB_USERNAME}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
   mongo-server:
     container_name: mongo-server
     image: mongo:6.0.1
