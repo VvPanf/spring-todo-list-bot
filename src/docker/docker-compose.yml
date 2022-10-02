@@ -1,5 +1,13 @@
 version: '3'
 services:
+  mongo-server:
+    container_name: mongo-server
+    image: mongo:6.0.1
+    volumes:
+      - '/tmp/mongodb:/data/db'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
   bot-server:
     container_name: bot-server
     depends_on:
@@ -16,13 +24,3 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-  mongo-server:
-    container_name: mongo-server
-    image: mongo:6.0.1
-    volumes:
-      - '/tmp/mongodb:/data/db'
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
-
-
