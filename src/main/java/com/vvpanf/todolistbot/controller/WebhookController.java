@@ -15,7 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class WebhookController {
     private final TelegramBot telegramBot;
 
-    @PostMapping("/")
+    @PostMapping("/callback/todo_list_bot")
     public BotApiMethod<?> onUpdateReceived(@RequestBody Update update) {
         return telegramBot.onWebhookUpdateReceived(update);
     }
