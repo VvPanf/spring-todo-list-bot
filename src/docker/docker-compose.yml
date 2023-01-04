@@ -5,6 +5,7 @@ services:
     image: nginx:latest
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./cert:/etc/nginx/cert
     ports:
       - 80:80
       - 433:433
