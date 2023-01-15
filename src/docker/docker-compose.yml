@@ -1,19 +1,12 @@
 version: '3'
 services:
-  nginx-server:
-    container_name: nginx
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./cert:/etc/nginx/cert
-    ports:
-      - 80:80
-      - 433:433
   mongo-server:
     container_name: mongo-server
     image: mongo:6.0.1
     volumes:
       - '/tmp/mongodb:/data/db'
+    ports:
+      - 27017:27017
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
@@ -26,10 +19,12 @@ services:
       dockerfile: Dockerfile
     image: bot-server:latest
     ports:
-      - 8080:8080
+      - 443:8443
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_PATH=${BOT_PATH}
       - BOT_WEBHOOK=${BOT_WEBHOOK}
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_HOST=${MONGODB_HOST}
+      - MONGODB_PORT=${MONGODB_PORT}
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}

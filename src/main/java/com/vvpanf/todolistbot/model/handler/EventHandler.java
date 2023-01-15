@@ -52,7 +52,7 @@ public class EventHandler {
     public List<BotApiMethod<?>> startMessage(long chatId, long userId) {
         todoListService.addUser(userId);
         String text = "*Вас приветствоет бот для составления списков*\n" +
-                     "Версия 1.0\n" +
+                     "Версия 1.2\n" +
                      "/show - посмотреть свои списки\n" +
                      "/create - создать новый список\n" +
                      "/delete - удалить список\n" +

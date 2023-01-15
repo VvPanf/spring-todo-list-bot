@@ -4,8 +4,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
@@ -14,16 +14,16 @@ import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.starter.SpringWebhookBot;
-import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
-import org.telegram.telegrambots.updatesreceivers.ServerlessWebhook;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ExecutionException;
 
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Slf4j
 public class TelegramBot extends SpringWebhookBot {
     String botPath;
     String botUsername;
@@ -41,20 +41,21 @@ public class TelegramBot extends SpringWebhookBot {
         this.telegramFacade = telegramFacade;
     }
 
-    public void registerBot() throws TelegramApiException {
-        TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class, new ServerlessWebhook());
-        telegramBotsApi.registerBot(this, getSetWebhook());
-    }
-
     public void registerCommands() throws TelegramApiException {
-        List<BotCommand> commands = List.of(
-                new BotCommand("show", "посмотреть свои списки"),
-                new BotCommand("create", "создать новый список"),
-                new BotCommand("delete", "удалить список"),
-                new BotCommand("help", "справка")
-        );
-        SetMyCommands cmds = new SetMyCommands(commands, new BotCommandScopeDefault(),  "ru");
-        execute(cmds);
+        try {
+            log.debug("Starting register bot commands");
+            List<BotCommand> commands = List.of(
+                    new BotCommand("show", "посмотреть свои списки"),
+                    new BotCommand("create", "создать новый список"),
+                    new BotCommand("delete", "удалить список"),
+                    new BotCommand("help", "справка")
+            );
+            SetMyCommands cmds = new SetMyCommands(commands, new BotCommandScopeDefault(),  "ru");
+            Boolean result = executeAsync(cmds).get();
+            log.debug("Bot commands registered: {}", result);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

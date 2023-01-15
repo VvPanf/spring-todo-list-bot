@@ -34,3 +34,7 @@
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 .env
+
+# certificate
+/src/main/resources/cert/cert.pem
+/src/main/resources/cert/private.key
